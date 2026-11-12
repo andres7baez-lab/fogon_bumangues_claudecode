@@ -140,13 +140,15 @@ def cargar_datos_base(con):
                WHERE NOT EXISTS (SELECT 1 FROM PRODUCTO WHERE nombre = %s)""",
             [(*p, p[0]) for p in productos],
         )
-        # Excepción única: las bebidas que siguen como se cargaron al principio
-        # ($0 e inactivas, porque no tenían precio) reciben su precio y se activan.
-        # Si el administrador ya les puso precio o las activó, no se cambian.
+        # Excepción: las bebidas se cargaban al principio en $0 e inactivas porque no
+        # tenían precio. Una bebida inactiva que sigue en $0 o que ya tiene el precio
+        # de esta lista (se fijó el precio pero no se activó) recibe su precio y se
+        # activa. Si el administrador le puso otro precio, no se toca.
         cur.executemany(
             """UPDATE PRODUCTO SET precio_unitario = %s, activo = 1
-               WHERE nombre = %s AND categoria = 'bebida' AND precio_unitario = 0 AND activo = 0""",
-            [(p, n) for n, p in BEBIDAS],
+               WHERE nombre = %s AND categoria = 'bebida' AND activo = 0
+                 AND precio_unitario IN (0, %s)""",
+            [(p, n, p) for n, p in BEBIDAS],
         )
 
 

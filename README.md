@@ -104,7 +104,7 @@ Crea lo que falte: usuarios de demo, métodos de pago, cliente «Consumidor fina
 
 Se puede correr las veces que se quiera: **no duplica** nada. Si se corre unos días después, solo agrega los días que falten para completar los 30. También devuelve las cuentas `admin` y `cajero` a su contraseña y rol de demo.
 
-**Precios:** `seed.py` **no cambia** los productos que ya existen, así que los precios, nombres y estados que el administrador cambie desde *Catálogo* se conservan. La única excepción son las bebidas que sigan en $0 e inactivas (como se cargaban antes de tener precio): reciben su precio y se activan. Solo `--reset` devuelve todo el catálogo a los precios de `seed.py`.
+**Precios:** `seed.py` **no cambia** los productos que ya existen, así que los precios, nombres y estados que el administrador cambie desde *Catálogo* se conservan. La única excepción son las bebidas **inactivas** que sigan en $0 o que tengan exactamente el precio de `seed.py` (se cargaban inactivas antes de tener precio): reciben su precio y se activan. Una bebida con otro precio no se toca. Por eso, si el administrador desactiva una bebida sin cambiarle el precio, el siguiente `seed.py` la vuelve a activar. Solo `--reset` devuelve todo el catálogo a los precios de `seed.py`.
 
 ```bash
 python seed.py --reset

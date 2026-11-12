@@ -84,15 +84,24 @@ class SeedRespetaElCatalogo(unittest.TestCase):
     def test_no_sobrescribe_precios_cambiados_por_el_administrador(self):
         self.con.execute("UPDATE PRODUCTO SET precio_unitario = 17000 WHERE nombre = 'Bandeja paisa'")
         self.con.execute("UPDATE PRODUCTO SET precio_unitario = 5000 WHERE nombre = 'Jugo Hit'")
-        self.con.execute("UPDATE PRODUCTO SET activo = 0 WHERE nombre = 'Agua'")
+        self.con.execute("UPDATE PRODUCTO SET precio_unitario = 4200, activo = 0 WHERE nombre = 'Mr Tea'")
+        self.con.execute("UPDATE PRODUCTO SET activo = 0 WHERE nombre = 'Bandeja paisa'")
         seed.cargar_datos_base(self.con)
-        self.assertEqual(self.precio_activo("Bandeja paisa"), (17000, 1))
+        self.assertEqual(self.precio_activo("Bandeja paisa"), (17000, 0))
         self.assertEqual(self.precio_activo("Jugo Hit"), (5000, 1))
-        self.assertEqual(self.precio_activo("Agua"), (3000, 0))
+        self.assertEqual(self.precio_activo("Mr Tea"), (4200, 0))  # otro precio: decisión del administrador
 
     def test_bebidas_viejas_en_cero_reciben_su_precio(self):
         # Así quedaron las bases cargadas antes de tener los precios de las bebidas.
         self.con.execute("UPDATE PRODUCTO SET precio_unitario = 0, activo = 0 WHERE categoria = 'bebida'")
+        seed.cargar_datos_base(self.con)
+        for nombre, precio in seed.BEBIDAS:
+            self.assertEqual(self.precio_activo(nombre), (precio, 1), nombre)
+
+    def test_bebidas_con_precio_pero_inactivas_se_activan(self):
+        # Caso de la base de producción: el precio se guardó pero no se activaron.
+        for nombre, precio in seed.BEBIDAS:
+            self.con.execute("UPDATE PRODUCTO SET precio_unitario = %s, activo = 0 WHERE nombre = %s", (precio, nombre))
         seed.cargar_datos_base(self.con)
         for nombre, precio in seed.BEBIDAS:
             self.assertEqual(self.precio_activo(nombre), (precio, 1), nombre)
