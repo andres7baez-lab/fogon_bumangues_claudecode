@@ -87,6 +87,25 @@ class PruebasWeb(unittest.TestCase):
         self.entrar(*CAJERO)
         self.assertIn(aviso, self.cliente.get("/caja/abrir").get_data(as_text=True))
 
+    def test_bebida_activa_aparece_en_nueva_venta(self):
+        con = conectar()
+        con.execute("UPDATE PRODUCTO SET activo = 0 WHERE nombre = 'Agua'")  # una inactiva no debe salir
+        jugo = con.execute("SELECT * FROM PRODUCTO WHERE nombre = 'Jugo Hit'").fetchone()
+        con.close()
+        self.assertEqual((jugo["categoria"], jugo["activo"]), ("bebida", 1))
+        self.entrar(*CAJERO)
+        self.cliente.post("/caja/abrir", data={"fecha": "2030-01-15", "turno": "almuerzo", "base_inicial": "0"})
+        texto = self.cliente.get("/ventas/nueva").get_data(as_text=True)
+        # Tarjeta de la bebida (sin principio), su sección y el atajo para llegar a ella.
+        self.assertIn(f'onclick="agregar({jugo["id_producto"]}, null, this)"', texto)
+        self.assertIn('id="cat-bebida"', texto)
+        self.assertIn('href="#cat-bebida">Bebidas (3)</a>', texto)
+        self.assertNotIn('data-nombre="agua"', texto)
+        # Y se puede vender.
+        lineas = json.dumps([{"id_producto": jugo["id_producto"], "id_principio": None, "cantidad": 2}])
+        r = self.cliente.post("/ventas/nueva", data={"lineas": lineas, "pago_efectivo": "8.000"}, follow_redirects=True)
+        self.assertIn("registrada por $8.000", r.get_data(as_text=True))
+
     def test_contrasena_incorrecta(self):
         r = self.entrar("admin", "mala")
         self.assertIn("incorrectos", r.get_data(as_text=True))

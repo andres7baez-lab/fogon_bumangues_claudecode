@@ -49,7 +49,11 @@
 @media (hover: hover) { .fg-dish.app-dish--opciones:hover { transform: none; } }
 .app-dish__principios { display: flex; flex-direction: column; gap: var(--sp-2); }
 .app-dish__principios .fg-chip { justify-content: center; width: 100%; padding: 8px 10px; }
-.app-buscador { position: sticky; top: 68px; z-index: 5; }
+.app-buscador { position: sticky; top: 68px; z-index: 5; display: flex; flex-direction: column; gap: var(--sp-2);
+                padding-block: var(--sp-2); background: var(--bg); }
+.app-atajos-cat .fg-chip { text-decoration: none; }
+/* Al saltar a una categoría, el título no queda tapado por la barra y el buscador fijos. */
+.categoria { scroll-margin-top: 190px; }
 .app-pagos { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--sp-2); }
 .app-atajos { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
 .app-atajos .fg-btn { flex: 1 1 140px; }

@@ -12,13 +12,19 @@
         <h1 class="fg-head__title">Nueva venta</h1>
       </div>
     </div>
+    {% set nombres_categoria = {'almuerzo': 'Almuerzos', 'bebida': 'Bebidas', 'otro': 'Otros'} %}
     <div class="app-buscador">
-      <input id="buscador" class="fg-input" type="search" placeholder="Buscar plato… (escriba parte del nombre)" autocomplete="off" aria-label="Buscar plato">
+      <input id="buscador" class="fg-input" type="search" placeholder="Buscar plato o bebida…" autocomplete="off" aria-label="Buscar plato o bebida">
+      {# Atajos: las bebidas y los otros quedan después de todos los almuerzos; un toque lleva a cada grupo. #}
+      <nav class="fg-chips app-atajos-cat" aria-label="Ir a una categoría">
+        {% for categoria, grupo in productos|groupby('categoria') %}
+        <a class="fg-chip" href="#cat-{{ categoria }}">{{ nombres_categoria[categoria] }} ({{ grupo|length }})</a>
+        {% endfor %}
+      </nav>
     </div>
 
-    {% set nombres_categoria = {'almuerzo': 'Almuerzos', 'bebida': 'Bebidas', 'otro': 'Otros'} %}
     {% for categoria, grupo in productos|groupby('categoria') %}
-    <div class="categoria" style="display:flex;flex-direction:column;gap:var(--sp-3)">
+    <div class="categoria" id="cat-{{ categoria }}" style="display:flex;flex-direction:column;gap:var(--sp-3)">
       <h2 class="fg-cat">{{ nombres_categoria[categoria] }}</h2>
       <div class="fg-dishes">
         {% for p in grupo %}
