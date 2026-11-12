@@ -1,0 +1,20 @@
+{# Primer elemento dentro de <body> en base.html. fogon.js lo quita al terminar (1,4 s) y no vuelve a salir en la sesión. #}
+<div class="fg-splash" role="status" aria-label="Cargando El Fogón Bumangués">
+  <div class="fg-splash__inner">
+    <svg class="fg-splash__icon" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+      <g class="fg-splash__steam fg-ico-steam" stroke-width="2.2" stroke-linecap="round">
+        <path d="M22 40c-3-3 3-5 0-9"/><path d="M32 38c-3-3 3-5 0-9"/><path d="M42 40c-3-3 3-5 0-9"/>
+      </g>
+      <g class="fg-splash__lid">
+        <path class="fg-splash__flame fg-ico-flame" d="M32 8c3.6 3 5.2 5.8 5.2 8.6a5.2 5.2 0 0 1-10.4 0c0-2.1 1-3.8 2.4-5.4.3 1.4 1 2.3 2 2.8-.4-2.1.1-4.1.8-6z"/>
+        <path class="fg-ico-dome" d="M10 45a22 22 0 0 1 44 0" stroke-width="4" stroke-linecap="round"/>
+        <path class="fg-ico-dome" d="M19 38a14 14 0 0 1 8-9" stroke-width="2.4" stroke-linecap="round" opacity=".6"/>
+      </g>
+      <path class="fg-ico-tray" d="M5 50h54" stroke-width="4.5" stroke-linecap="round"/>
+    </svg>
+    <span class="fg-splash__name">El Fogón</span>
+    <span class="fg-splash__sub">Bumangués</span>
+  </div>
+</div>
+<div class="fg-progress" aria-hidden="true"></div>
+<div class="fg-toasts" aria-live="polite"></div>

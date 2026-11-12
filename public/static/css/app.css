@@ -1,0 +1,72 @@
+/* =====================================================================
+   Ajustes propios de la app sobre la capa visual (fogon.css no se modifica).
+   Usa solo los tokens (--fg-*, --sp-*, --r-*) de fogon.css.
+   ===================================================================== */
+
+/* La barra inferior se reparte entre los ítems que tenga el rol (2 a 6). */
+.fg-bottomnav { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
+.fg-bottomnav a { text-align: center; line-height: 1.1; }
+
+/* El nombre del logo no se parte en dos líneas en la barra superior del celular. */
+.fg-topbar__brand .fg-brand__name { white-space: nowrap; }
+
+/* Barra superior: estado de la caja visible en celular y tablet (en computador va en el menú). */
+.app-topbar-status .fg-status { font-size: .72rem; padding: 4px 10px; }
+.app-usuario { display: none; font-size: var(--fs-sm); white-space: nowrap; }
+/* En el menú lateral el estado puede ocupar dos líneas para no salirse de los 248 px. */
+.fg-sidebar__foot .fg-status { white-space: normal; line-height: 1.3; }
+/* Dos columnas solo cuando hay espacio de computador (en tablet las tablas no caben lado a lado). */
+.app-grid-2 { display: grid; gap: var(--sp-4); grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 1025px) { .app-grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* En celular el estado dice solo "Caja abierta" (la fecha y el turno ya están en el título de cada pantalla). */
+@media (max-width: 640px) { .app-topbar-status .app-status-detalle { display: none; } }
+@media (min-width: 1025px) { .app-usuario { display: inline; } }
+@media (min-width: 1025px) { .app-topbar-status { display: none; } }
+
+/* Formularios en fila (filtros, alta de producto/usuario). */
+.app-form-row { display: grid; gap: var(--sp-4); grid-template-columns: minmax(0, 1fr); align-items: end; }
+@media (min-width: 641px) { .app-form-row { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); } }
+.app-inline { display: flex; gap: var(--sp-2); align-items: center; flex-wrap: wrap; }
+.app-inline .fg-input { min-width: 0; }
+.app-acciones { display: flex; gap: var(--sp-2); flex-wrap: wrap; justify-content: flex-end; }
+.app-precio { width: 8.5rem; }
+@media (max-width: 640px) {
+  .fg-table--cards td .app-inline, .fg-table--cards td .app-acciones { justify-content: flex-end; }
+  .fg-table--cards td.app-td-form { flex-direction: column; align-items: stretch; }
+  .fg-table--cards td.app-td-form::before { margin-bottom: 4px; }
+  .app-precio { width: 7rem; }
+}
+
+/* Texto largo dentro de una celda-tarjeta del celular (p. ej. pagos mixtos): baja de línea en vez de salirse. */
+.app-celda-texto { min-width: 0; overflow-wrap: anywhere; }
+
+/* Tablas largas: desplazamiento horizontal en tablet/computador. */
+@media (min-width: 641px) { .app-scroll { overflow-x: auto; } }
+
+/* Nueva venta: tarjetas de plato con un botón por principio (un toque = plato + principio). */
+.fg-dish__qty[hidden] { display: none; }   /* fogon.css le da display:inline-flex y anula el atributo hidden */
+.fg-dish.app-dish--opciones { cursor: default; }
+@media (hover: hover) { .fg-dish.app-dish--opciones:hover { transform: none; } }
+.app-dish__principios { display: flex; flex-direction: column; gap: var(--sp-2); }
+.app-dish__principios .fg-chip { justify-content: center; width: 100%; padding: 8px 10px; }
+.app-buscador { position: sticky; top: 68px; z-index: 5; }
+.app-pagos { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--sp-2); }
+.app-atajos { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+.app-atajos .fg-btn { flex: 1 1 140px; }
+.app-vueltas:empty { display: none; }
+.fg-ticket__body details summary { cursor: pointer; color: var(--text-muted); font-weight: 600; font-size: var(--fs-sm); min-height: var(--tap); display: flex; align-items: center; }
+
+/* Demo pública: recuadro de cuentas en el inicio de sesión y aviso de prototipo. */
+.app-cuentas-demo { margin-top: var(--sp-4); }
+.app-cuentas-demo .app-fila { font-size: var(--fs-sm); }
+@media (max-width: 420px) { .app-cuentas-demo .app-fila { flex-direction: column; align-items: flex-start; gap: 2px; } }
+.app-cuentas-demo code { font-family: inherit; font-weight: 700; }
+.app-aviso-demo { margin: 0; }
+.fg-login__panel .app-aviso-demo { margin-top: var(--sp-3); }
+
+/* Pila de indicadores pequeños dentro de tarjetas. */
+.app-filas { display: flex; flex-direction: column; }
+.app-fila { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-3); padding: 10px 0; border-bottom: 1px solid var(--line); }
+.app-fila:last-child { border-bottom: 0; }
+.app-fila--total { font-weight: 800; }
+.app-fila .fg-num { font-weight: 700; }

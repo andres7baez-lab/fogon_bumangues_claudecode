@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% from "_diferencia.html" import diferencia %}
+{% block titulo %}Reportes · El Fogón Bumangués{% endblock %}
+{% block miga %}Administración · Reportes{% endblock %}
+{% block contenido %}
+<div class="fg-head">
+  <div>
+    <p class="fg-eyebrow">Del {{ desde|fecha }} al {{ hasta|fecha }}</p>
+    <h1 class="fg-head__title">Reportes</h1>
+    <p class="fg-head__desc">Solo se cuentan las ventas activas (las anuladas no se incluyen).</p>
+  </div>
+</div>
+
+<form method="get" class="fg-card app-form-row">
+  <div class="fg-field">
+    <label class="fg-label" for="desde">Desde</label>
+    <input class="fg-input" type="date" id="desde" name="desde" value="{{ desde }}">
+  </div>
+  <div class="fg-field">
+    <label class="fg-label" for="hasta">Hasta</label>
+    <input class="fg-input" type="date" id="hasta" name="hasta" value="{{ hasta }}">
+  </div>
+  <div><button class="fg-btn fg-btn--primary fg-btn--block" type="submit">Consultar</button></div>
+</form>
+
+<div class="fg-grid fg-grid--stats">
+  <div class="fg-stat"><span class="fg-stat__label">Total vendido</span>
+    <span class="fg-stat__value" data-fg-count="{{ total_platos }}">{{ total_platos|pesos }}</span></div>
+  <div class="fg-stat"><span class="fg-stat__label">Unidades vendidas</span>
+    <span class="fg-stat__value" data-fg-count="{{ unidades }}" data-fg-entero>{{ unidades }}</span></div>
+  <div class="fg-stat"><span class="fg-stat__label">Platos con principio</span>
+    <span class="fg-stat__value" data-fg-count="{{ total_principios }}" data-fg-entero>{{ total_principios }}</span></div>
+  <div class="fg-stat"><span class="fg-stat__label">Cierres en el rango</span>
+    <span class="fg-stat__value" data-fg-count="{{ cierres|length }}" data-fg-entero>{{ cierres|length }}</span></div>
+</div>
+
+<div class="app-grid-2">
+  <section class="fg-card">
+    <div class="fg-card__head"><h2 class="fg-card__title">Ventas por plato</h2></div>
+    {% set max_cant = (platos|map(attribute='cantidad')|max) if platos else 1 %}
+    <table class="fg-table fg-table--cards">
+      <thead><tr><th>Producto</th><th class="is-num">Unidades</th><th></th><th class="is-num">Total</th></tr></thead>
+      <tbody>
+      {% for p in platos %}
+        <tr>
+          <td class="fg-td-title is-plato" data-label="Producto">{{ p.nombre }}</td>
+          <td class="fg-money" data-label="Unidades">{{ p.cantidad }}</td>
+          <td data-label="Proporción"><div class="fg-bar fg-bar--cielo" aria-hidden="true"><span style="--v: {{ '%.3f'|format(p.cantidad / max_cant) }}"></span></div></td>
+          <td class="fg-money is-strong" data-label="Total">{{ p.total|pesos }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="4" class="fg-empty">No hay ventas en este rango.</td></tr>
+      {% endfor %}
+      </tbody>
+      {% if platos %}<tfoot><tr><td data-label="">Total</td><td class="fg-money" data-label="Unidades">{{ unidades }}</td><td data-label=""></td><td class="fg-money" data-label="Total">{{ total_platos|pesos }}</td></tr></tfoot>{% endif %}
+    </table>
+  </section>
+
+  <section class="fg-card">
+    <div class="fg-card__head"><h2 class="fg-card__title">Ventas por principio</h2><span class="fg-help">Sirve para planear cuánto preparar.</span></div>
+    <table class="fg-table fg-table--cards">
+      <thead><tr><th>Principio</th><th class="is-num">Platos servidos</th><th></th><th class="is-num">%</th></tr></thead>
+      <tbody>
+      {% for p in principios %}
+        {% set fraccion = p.cantidad / total_principios %}
+        <tr>
+          <td class="fg-td-title" data-label="Principio">{{ p.nombre }}</td>
+          <td class="fg-money" data-label="Platos servidos">{{ p.cantidad }}</td>
+          <td data-label="Proporción"><div class="fg-bar fg-bar--maiz" aria-hidden="true"><span style="--v: {{ '%.3f'|format(fraccion) }}"></span></div></td>
+          <td class="fg-money" data-label="%">{{ (100 * fraccion)|round|int }}%</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="4" class="fg-empty">No hay platos con principio en este rango.</td></tr>
+      {% endfor %}
+      </tbody>
+      {% if principios %}<tfoot><tr><td data-label="">Total</td><td class="fg-money" data-label="Platos servidos">{{ total_principios }}</td><td data-label=""></td><td data-label=""></td></tr></tfoot>{% endif %}
+    </table>
+  </section>
+</div>
+
+<section class="fg-card">
+  <div class="fg-card__head"><h2 class="fg-card__title">Historial de cierres</h2>
+    <span class="fg-help">Diferencia: verde $0 · amarillo hasta {{ umbral_diferencia|pesos }} · rojo más de {{ umbral_diferencia|pesos }}</span></div>
+  <div class="fg-table-wrap app-scroll">
+  <table class="fg-table fg-table--cards">
+    <thead>
+      <tr><th>Fecha</th><th>Turno</th><th>Estado</th><th class="is-num">Ventas</th><th class="is-num">Total vendido</th>
+          <th class="is-num">Efectivo esperado</th><th class="is-num">Efectivo contado</th><th class="is-num">Dif. efectivo</th>
+          <th class="is-num">Transf. ventas</th><th class="is-num">Transf. banco</th><th class="is-num">Dif. transferencias</th><th></th></tr>
+    </thead>
+    <tbody>
+    {% for r in cierres %}
+      <tr>
+        <td class="fg-td-title fg-num" data-label="Fecha">{{ r.cierre.fecha|fecha }}</td>
+        <td data-label="Turno">{{ r.cierre.turno }}</td>
+        <td data-label="Estado">{% if r.cierre.estado == 'abierto' %}<span class="fg-badge fg-badge--ok">Abierta</span>{% else %}<span class="fg-badge fg-badge--muted">Cerrada</span>{% endif %}</td>
+        <td class="fg-money" data-label="Ventas">{{ r.ventas_activas }}{% if r.ventas_anuladas %} <span class="fg-muted">(+{{ r.ventas_anuladas }} anul.)</span>{% endif %}</td>
+        <td class="fg-money" data-label="Total vendido">{{ r.total_vendido|pesos }}</td>
+        <td class="fg-money" data-label="Efectivo esperado">{{ r.efectivo_esperado|pesos }}</td>
+        <td class="fg-money" data-label="Efectivo contado">{{ r.cierre.efectivo_contado|pesos if r.cierre.efectivo_contado is not none else '—' }}</td>
+        <td class="fg-money" data-label="Dif. efectivo">{{ diferencia(r.diferencia_efectivo) }}</td>
+        <td class="fg-money" data-label="Transf. ventas">{{ r.transferencias_ventas|pesos }}</td>
+        <td class="fg-money" data-label="Transf. banco">{{ r.cierre.transferencias_registradas|pesos if r.cierre.transferencias_registradas is not none else '—' }}</td>
+        <td class="fg-money" data-label="Dif. transferencias">{{ diferencia(r.diferencia_transferencias) }}</td>
+        <td class="fg-td-actions"><a class="fg-btn fg-btn--sm fg-btn--touch" href="{{ url_for('caja.detalle', id_cierre=r.cierre.id_cierre) }}">Ver</a></td>
+      </tr>
+    {% else %}
+      <tr><td colspan="12" class="fg-empty">No hay cierres en este rango.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endblock %}

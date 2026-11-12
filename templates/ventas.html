@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block titulo %}Ventas del turno · El Fogón Bumangués{% endblock %}
+{% block miga %}Ventas · Turno actual{% endblock %}
+{% block contenido %}
+<div class="fg-head">
+  <div>
+    <p class="fg-eyebrow">{{ cierre.fecha|fecha }} · turno {{ cierre.turno }}</p>
+    <h1 class="fg-head__title">Ventas del turno</h1>
+  </div>
+  <div class="fg-head__actions">
+    <a class="fg-btn fg-btn--primary" href="{{ url_for('ventas.nueva') }}">Nueva venta</a>
+  </div>
+</div>
+
+<div class="fg-grid fg-grid--stats">
+  <div class="fg-stat"><span class="fg-stat__label">Total vendido</span>
+    <span class="fg-stat__value" data-fg-count="{{ resumen.total_vendido }}">{{ resumen.total_vendido|pesos }}</span>
+    <span class="fg-stat__sub">{{ resumen.ventas_activas }} ventas activas</span></div>
+  <div class="fg-stat"><span class="fg-stat__label">En efectivo</span>
+    <span class="fg-stat__value" data-fg-count="{{ resumen.efectivo_ventas }}">{{ resumen.efectivo_ventas|pesos }}</span></div>
+  <div class="fg-stat"><span class="fg-stat__label">Por transferencia</span>
+    <span class="fg-stat__value" data-fg-count="{{ resumen.transferencias_ventas }}">{{ resumen.transferencias_ventas|pesos }}</span></div>
+  <div class="fg-stat"><span class="fg-stat__label">Anuladas</span>
+    <span class="fg-stat__value" data-fg-count="{{ resumen.ventas_anuladas }}" data-fg-entero>{{ resumen.ventas_anuladas }}</span>
+    <span class="fg-stat__sub">No cuentan en el cierre</span></div>
+</div>
+
+<section class="fg-card">
+  <div class="fg-card__head"><h2 class="fg-card__title">Listado</h2></div>
+  {% include "_tabla_ventas.html" %}
+</section>
+{% endblock %}

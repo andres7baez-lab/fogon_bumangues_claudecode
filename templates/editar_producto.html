@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block titulo %}Editar producto · El Fogón Bumangués{% endblock %}
+{% block miga %}Catálogo · Editar producto{% endblock %}
+{% block contenido %}
+<div class="fg-head">
+  <div>
+    <p class="fg-eyebrow">Catálogo</p>
+    <h1 class="fg-head__title">Editar producto</h1>
+  </div>
+</div>
+
+<div class="fg-grid fg-grid--aside">
+  <form method="post" class="fg-card fg-form" data-fg-validar novalidate>
+    <div class="fg-field">
+      <label class="fg-label" for="nombre">Nombre</label>
+      <input class="fg-input" id="nombre" name="nombre" value="{{ p.nombre }}" required>
+      <p class="fg-error"></p>
+    </div>
+    <div class="fg-grid fg-grid--2">
+      <div class="fg-field">
+        <label class="fg-label" for="categoria">Categoría</label>
+        <select class="fg-select" id="categoria" name="categoria">
+          {% for valor, texto in [('almuerzo', 'Almuerzo'), ('bebida', 'Bebida'), ('otro', 'Otro')] %}
+          <option value="{{ valor }}" {{ 'selected' if p.categoria == valor }}>{{ texto }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="fg-field">
+        <label class="fg-label" for="precio_unitario">Precio</label>
+        <div class="fg-affix"><span class="fg-affix__pre">$</span>
+          <input class="fg-input fg-input--money" id="precio_unitario" name="precio_unitario" inputmode="numeric" required
+                 value="{{ p.precio_unitario|pesos|replace('$', '') if p.precio_unitario is number else p.precio_unitario }}">
+        </div>
+        <p class="fg-error"></p>
+      </div>
+      <div class="fg-field">
+        <label class="fg-label" for="incluye_principio">¿Lleva principio? (solo almuerzos)</label>
+        <select class="fg-select" id="incluye_principio" name="incluye_principio">
+          <option value="1" {{ 'selected' if p.incluye_principio }}>Sí</option>
+          <option value="0" {{ 'selected' if not p.incluye_principio }}>No</option>
+        </select>
+      </div>
+      <div class="fg-field">
+        <label class="fg-label" for="activo">Estado</label>
+        <select class="fg-select" id="activo" name="activo">
+          <option value="1" {{ 'selected' if p.activo }}>Activo (el cajero lo ve)</option>
+          <option value="0" {{ 'selected' if not p.activo }}>Inactivo (oculto para el cajero)</option>
+        </select>
+      </div>
+    </div>
+    <p class="fg-help">Los cambios solo afectan las ventas nuevas. Cada venta anterior conserva el precio con el que se vendió.
+      {% if usos %}Si cambia el nombre, los reportes mostrarán el nombre nuevo también para las ventas anteriores.{% endif %}</p>
+    <div class="fg-head__actions">
+      <button class="fg-btn fg-btn--primary fg-btn--lg" type="submit">Guardar cambios</button>
+      <a class="fg-btn fg-btn--lg fg-btn--ghost" href="{{ url_for('catalogo.productos') }}#p{{ id_producto }}">Cancelar</a>
+    </div>
+  </form>
+
+  <section class="fg-card">
+    <div class="fg-card__head"><h2 class="fg-card__title">Eliminar producto</h2></div>
+    {% if usos == 0 %}
+      <p class="fg-help" style="margin-bottom:var(--sp-4)">Este producto nunca se ha vendido, así que se puede eliminar del catálogo.</p>
+      <form method="post" action="{{ url_for('catalogo.eliminar_producto', id_producto=id_producto) }}"
+            data-confirmar="¿Eliminar «{{ p.nombre }}» del catálogo? Esta acción no se puede deshacer.">
+        <button class="fg-btn fg-btn--danger" type="submit">Eliminar producto</button>
+      </form>
+    {% else %}
+      <p class="fg-alert fg-alert--info">Este producto aparece en {{ usos }} línea(s) de venta, por eso no se puede eliminar:
+        esas ventas perderían la información de qué se vendió. Si ya no se ofrece, márquelo como Inactivo.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

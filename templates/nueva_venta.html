@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+{% block titulo %}Nueva venta · El Fogón Bumangués{% endblock %}
+{% block miga %}Ventas · Nueva venta{% endblock %}
+{% block contenido %}
+<div class="fg-sale">
+
+  <!-- ============ Catálogo: platos por categoría ============ -->
+  <section class="fg-sale__catalog">
+    <div class="fg-head">
+      <div>
+        <p class="fg-eyebrow">Turno {{ caja_abierta.turno }} · {{ caja_abierta.fecha|fecha }}</p>
+        <h1 class="fg-head__title">Nueva venta</h1>
+      </div>
+    </div>
+    <div class="app-buscador">
+      <input id="buscador" class="fg-input" type="search" placeholder="Buscar plato… (escriba parte del nombre)" autocomplete="off" aria-label="Buscar plato">
+    </div>
+
+    {% set nombres_categoria = {'almuerzo': 'Almuerzos', 'bebida': 'Bebidas', 'otro': 'Otros'} %}
+    {% for categoria, grupo in productos|groupby('categoria') %}
+    <div class="categoria" style="display:flex;flex-direction:column;gap:var(--sp-3)">
+      <h2 class="fg-cat">{{ nombres_categoria[categoria] }}</h2>
+      <div class="fg-dishes">
+        {% for p in grupo %}
+          {% if p.lleva_principio %}
+          {# Plato con principio: un botón por principio del día (un toque = plato + principio). #}
+          <div class="fg-dish app-dish--opciones" data-producto="{{ p.id_producto }}" data-nombre="{{ p.nombre|lower }}">
+            <span class="fg-dish__name">{{ p.nombre }}</span>
+            <span class="fg-dish__price fg-num">{{ p.precio_unitario|pesos }}</span>
+            <span class="fg-dish__qty" hidden></span>
+            <div class="app-dish__principios">
+              {% for pr in principios %}
+                <button type="button" class="fg-chip" onclick="agregar({{ p.id_producto }}, {{ pr.id_principio }}, this)">+ {{ pr.nombre }}</button>
+              {% else %}
+                <span class="fg-help">No hay principios activos hoy.</span>
+              {% endfor %}
+            </div>
+          </div>
+          {% else %}
+          <button type="button" class="fg-dish" data-producto="{{ p.id_producto }}" data-nombre="{{ p.nombre|lower }}"
+                  onclick="agregar({{ p.id_producto }}, null, this)">
+            <span class="fg-dish__name">{{ p.nombre }}</span>
+            <span class="fg-dish__price fg-num">{{ p.precio_unitario|pesos }}</span>
+            <span class="fg-dish__qty" hidden></span>
+          </button>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </section>
+
+  <!-- ============ Cuenta: hoja inferior en celular, columna fija en computador ============ -->
+  <form method="post" class="fg-ticket" id="formulario-venta" novalidate>
+    <button type="button" class="fg-ticket__peek" data-fg-hoja aria-expanded="false" aria-controls="cuenta-cuerpo">
+      <span class="fg-ticket__count" id="conteo">Cuenta vacía</span>
+      <span class="fg-ticket__peek-total fg-num" id="total-peek">$0</span>
+      <svg class="fg-ticket__chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg>
+    </button>
+
+    <div class="fg-ticket__body" id="cuenta-cuerpo">
+      <div class="fg-ticket__head">
+        <h2 class="fg-ticket__title">Cuenta</h2>
+        <button type="button" class="fg-btn fg-btn--ghost fg-btn--sm" onclick="vaciar()">Vaciar</button>
+      </div>
+
+      <ul class="fg-lines" id="lineas"></ul>
+      <div class="fg-total"><span class="fg-total__label">Total</span><strong class="fg-total__value" id="total">$0</strong></div>
+
+      <div class="app-atajos">
+        <button type="button" class="fg-btn fg-btn--sm fg-btn--touch" onclick="todo('efectivo')">Todo efectivo</button>
+        <button type="button" class="fg-btn fg-btn--sm fg-btn--touch" onclick="todo('transferencia')">Todo transferencia</button>
+      </div>
+
+      {# Pagos: solo Efectivo y Transferencia (dos campos fijos). #}
+      <div class="fg-field" id="campo-pagos">
+        <span class="fg-label">Pago</span>
+        <div class="app-pagos">
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <label class="fg-help" for="pago_efectivo">Efectivo</label>
+            <div class="fg-affix"><span class="fg-affix__pre">$</span>
+              <input class="fg-input fg-input--money" name="pago_efectivo" id="pago_efectivo" inputmode="numeric" autocomplete="off"
+                     value="{{ formulario.get('pago_efectivo', '') }}" placeholder="0">
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <label class="fg-help" for="pago_transferencia">Transferencia</label>
+            <div class="fg-affix"><span class="fg-affix__pre">$</span>
+              <input class="fg-input fg-input--money" name="pago_transferencia" id="pago_transferencia" inputmode="numeric" autocomplete="off"
+                     value="{{ formulario.get('pago_transferencia', '') }}" placeholder="0">
+            </div>
+          </div>
+        </div>
+        <p class="fg-error"></p>
+      </div>
+      <div class="app-atajos">
+        <button type="button" class="fg-btn fg-btn--ghost fg-btn--sm fg-btn--touch" onclick="completar('transferencia')">Completar con transferencia</button>
+        <button type="button" class="fg-btn fg-btn--ghost fg-btn--sm fg-btn--touch" onclick="completar('efectivo')">Completar con efectivo</button>
+      </div>
+
+      <div id="estado-pago" class="fg-balance fg-balance--vacio" role="status">
+        <span id="estado-texto">Agregue platos a la cuenta</span><span class="fg-balance__amount" id="estado-monto"></span>
+      </div>
+
+      <div class="fg-field">
+        <label class="fg-label" for="recibido">Recibido en efectivo (opcional, para las vueltas)</label>
+        <div class="fg-affix"><span class="fg-affix__pre">$</span>
+          <input class="fg-input fg-input--money" name="recibido" id="recibido" inputmode="numeric" autocomplete="off" placeholder="0">
+        </div>
+        <p class="fg-help app-vueltas" id="vueltas"></p>
+      </div>
+
+      <details {% if formulario.get('cliente_numero') %}open{% endif %}>
+        <summary>Cliente (opcional, por defecto «Consumidor final»)</summary>
+        <div class="fg-form">
+          <div class="fg-field">
+            <label class="fg-label" for="cliente_numero">Cédula o NIT</label>
+            <input class="fg-input" id="cliente_numero" name="cliente_numero" value="{{ formulario.get('cliente_numero', '') }}">
+          </div>
+          <div class="fg-field">
+            <label class="fg-label" for="cliente_nombre">Nombre (solo si es cliente nuevo)</label>
+            <input class="fg-input" id="cliente_nombre" name="cliente_nombre" value="{{ formulario.get('cliente_nombre', '') }}">
+          </div>
+        </div>
+      </details>
+
+      <input type="hidden" name="lineas" id="campo-lineas">
+      <button type="submit" id="guardar" class="fg-btn fg-btn--primary fg-btn--lg fg-btn--block">Guardar venta</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ---------- Datos que envía el servidor ----------
+const PRODUCTOS = {};
+{{ productos|tojson }}.forEach(p => PRODUCTOS[p.id_producto] = p);
+const PRINCIPIOS = {};
+{{ principios|tojson }}.forEach(p => PRINCIPIOS[p.id_principio] = p.nombre);
+
+// La cuenta: cada línea es un plato + principio (Regla 6: principios distintos = líneas distintas).
+let carrito = ({{ carrito|tojson }} || []).filter(l => PRODUCTOS[l.id_producto]);
+
+// ---------- Utilidades ----------
+const miles = n => String(Math.abs(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ".");   // 13500 -> "13.500"
+const pesos = n => (n < 0 ? "-$" : "$") + miles(n);
+const leer = id => parseInt((document.getElementById(id).value || "").replace(/\D/g, ""), 10) || 0;
+const escribir = (id, n) => document.getElementById(id).value = n ? miles(n) : "";
+const total = () => carrito.reduce((s, l) => s + l.cantidad * PRODUCTOS[l.id_producto].precio_unitario, 0);
+const esc = t => String(t).replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+
+// ---------- Acciones sobre la cuenta ----------
+function agregar(idProducto, idPrincipio, boton) {
+  const existente = carrito.find(l => l.id_producto === idProducto && l.id_principio === idPrincipio);
+  if (existente) existente.cantidad++;
+  else carrito.push({id_producto: idProducto, id_principio: idPrincipio, cantidad: 1});
+  pintar();
+  if (boton && window.FG) FG.pulso(boton.closest(".fg-dish"));   // pulso de 220 ms en la tarjeta
+}
+function cambiar(i, delta) {
+  carrito[i].cantidad += delta;
+  if (carrito[i].cantidad <= 0) carrito.splice(i, 1);
+  pintar();
+}
+function vaciar() {
+  carrito = [];
+  ["pago_efectivo", "pago_transferencia", "recibido"].forEach(id => escribir(id, 0));
+  pintar();
+}
+function todo(metodo) {
+  escribir("pago_efectivo", metodo === "efectivo" ? total() : 0);
+  escribir("pago_transferencia", metodo === "transferencia" ? total() : 0);
+  pintar();
+}
+function completar(metodo) {
+  const otro = metodo === "efectivo" ? leer("pago_transferencia") : leer("pago_efectivo");
+  escribir("pago_" + metodo, Math.max(total() - otro, 0));
+  pintar();
+}
+
+// ---------- Dibuja la cuenta, el total y el saldo del pago ----------
+let totalAnterior = null;
+function pintar() {
+  const ul = document.getElementById("lineas");
+  ul.innerHTML = "";
+  if (!carrito.length) ul.innerHTML = '<li class="fg-empty">Toque un plato para agregarlo</li>';
+  carrito.forEach((l, i) => {
+    const p = PRODUCTOS[l.id_producto];
+    const li = document.createElement("li");
+    li.className = "fg-line";
+    li.innerHTML = `
+      <div class="fg-line__info">
+        <div class="fg-line__name">${esc(p.nombre)}</div>
+        <div class="fg-line__meta">${l.id_principio ? "Principio: " + esc(PRINCIPIOS[l.id_principio]) + " · " : ""}${pesos(p.precio_unitario)} c/u</div>
+      </div>
+      <div class="fg-stepper">
+        <button type="button" onclick="cambiar(${i}, -1)" aria-label="Quitar uno">−</button>
+        <output aria-label="Cantidad">${l.cantidad}</output>
+        <button type="button" onclick="cambiar(${i}, 1)" aria-label="Agregar uno">+</button>
+      </div>
+      <div class="fg-line__total">${pesos(l.cantidad * p.precio_unitario)}</div>`;
+    ul.appendChild(li);
+  });
+
+  // Insignia de cantidad en cada tarjeta de plato
+  const porProducto = {};
+  carrito.forEach(l => porProducto[l.id_producto] = (porProducto[l.id_producto] || 0) + l.cantidad);
+  document.querySelectorAll(".fg-dish[data-producto]").forEach(el => {
+    const n = porProducto[el.dataset.producto] || 0, badge = el.querySelector(".fg-dish__qty");
+    el.classList.toggle("is-in", n > 0);
+    badge.hidden = !n; badge.textContent = n || "";
+  });
+
+  // Total con conteo de 200 ms (FG.contar)
+  const t = total();
+  if (window.FG && totalAnterior !== null) { FG.contar("#total", t); FG.contar("#total-peek", t); }
+  else { document.getElementById("total").textContent = pesos(t); document.getElementById("total-peek").textContent = pesos(t); }
+  totalAnterior = t;
+  const platos = carrito.reduce((s, l) => s + l.cantidad, 0);
+  document.getElementById("conteo").textContent = platos ? platos + (platos === 1 ? " producto" : " productos") : "Cuenta vacía";
+
+  // Saldo del pago (Regla 3: los pagos deben sumar exactamente el total)
+  const pagado = leer("pago_efectivo") + leer("pago_transferencia");
+  const caja = document.getElementById("estado-pago"), texto = document.getElementById("estado-texto"), monto = document.getElementById("estado-monto");
+  if (!t) { caja.className = "fg-balance fg-balance--vacio"; texto.textContent = "Agregue platos a la cuenta"; monto.textContent = ""; }
+  else if (pagado < t) { caja.className = "fg-balance fg-balance--falta"; texto.textContent = "Faltan"; monto.textContent = pesos(t - pagado); }
+  else if (pagado > t) { caja.className = "fg-balance fg-balance--sobra"; texto.textContent = "Sobran (los pagos deben sumar el total)"; monto.textContent = pesos(pagado - t); }
+  else { caja.className = "fg-balance fg-balance--exacto"; texto.textContent = "✓ Pago completo"; monto.textContent = pesos(t); }
+
+  // Vueltas: solo informativo, no se guarda
+  const recibido = leer("recibido"), efectivo = leer("pago_efectivo");
+  document.getElementById("vueltas").textContent =
+    recibido && efectivo ? (recibido >= efectivo ? "Vueltas: " + pesos(recibido - efectivo) : "El valor recibido es menor que el pago en efectivo") : "";
+}
+
+// ---------- Validación al guardar (FG.error marca el campo y lo sacude) ----------
+document.getElementById("formulario-venta").addEventListener("submit", e => {
+  const t = total(), pagado = leer("pago_efectivo") + leer("pago_transferencia");
+  let error = "";
+  if (!carrito.length) error = "Agregue al menos un plato a la cuenta.";
+  else if (pagado < t) error = "Faltan " + FG.cop(t - pagado) + " para completar el pago.";
+  else if (pagado > t) error = "Sobran " + FG.cop(pagado - t) + ": los pagos deben sumar exactamente el total.";
+  if (error) {
+    e.preventDefault();
+    const hoja = document.querySelector(".fg-ticket");
+    if (hoja && !hoja.classList.contains("is-open")) {   // en celular abre la cuenta para que se vea el error
+      hoja.classList.add("is-open");
+      hoja.querySelector("[data-fg-hoja]").setAttribute("aria-expanded", "true");
+    }
+    FG.error("#campo-pagos", error);
+    return;
+  }
+  document.getElementById("campo-lineas").value = JSON.stringify(carrito);
+  document.getElementById("guardar").disabled = true;  // evita guardar dos veces por doble clic
+});
+
+// Recalcula al escribir en los campos de pago y les pone punto de miles al salir.
+["pago_efectivo", "pago_transferencia", "recibido"].forEach(id => {
+  const campo = document.getElementById(id);
+  campo.addEventListener("input", pintar);
+  campo.addEventListener("blur", () => { escribir(id, leer(id)); pintar(); });
+});
+
+// Buscador de platos (oculta también las categorías que quedan vacías)
+document.getElementById("buscador").addEventListener("input", e => {
+  const q = e.target.value.trim().toLowerCase();
+  document.querySelectorAll(".fg-dish[data-nombre]").forEach(el => el.style.display = el.dataset.nombre.includes(q) ? "" : "none");
+  document.querySelectorAll(".categoria").forEach(cat => {
+    const visibles = [...cat.querySelectorAll(".fg-dish")].some(el => el.style.display !== "none");
+    cat.style.display = visibles ? "flex" : "none";
+  });
+});
+
+pintar();
+</script>
+{% endblock %}

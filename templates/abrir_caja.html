@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block titulo %}Abrir caja · El Fogón Bumangués{% endblock %}
+{% block miga %}Caja · Apertura{% endblock %}
+{% block contenido %}
+<div class="fg-head">
+  <div>
+    <p class="fg-eyebrow">Inicio del turno</p>
+    <h1 class="fg-head__title">Abrir caja</h1>
+    <p class="fg-head__desc">Para registrar ventas primero hay que abrir la caja del turno. La base inicial es el efectivo con el que arranca la caja (para dar vueltas).</p>
+  </div>
+</div>
+
+<section class="fg-card" style="max-width: 520px">
+  <form method="post" class="fg-form" data-fg-validar novalidate>
+    <div class="fg-field">
+      <label class="fg-label" for="fecha">Fecha</label>
+      <input class="fg-input" type="date" id="fecha" name="fecha" value="{{ datos.fecha }}" required>
+      <p class="fg-error"></p>
+    </div>
+    <div class="fg-field">
+      <label class="fg-label" for="turno">Turno</label>
+      <select class="fg-select" id="turno" name="turno">
+        <option value="almuerzo" {{ 'selected' if datos.turno == 'almuerzo' }}>Almuerzo</option>
+        <option value="noche" {{ 'selected' if datos.turno == 'noche' }}>Noche</option>
+      </select>
+    </div>
+    <div class="fg-field">
+      <label class="fg-label" for="base_inicial">Base inicial en efectivo</label>
+      <div class="fg-affix"><span class="fg-affix__pre">$</span>
+        <input class="fg-input fg-input--money fg-input--lg" id="base_inicial" name="base_inicial" inputmode="numeric" value="{{ datos.base_inicial }}" placeholder="100.000" required autofocus>
+      </div>
+      <p class="fg-error"></p>
+    </div>
+    <button class="fg-btn fg-btn--primary fg-btn--lg fg-btn--block" type="submit">Abrir caja</button>
+  </form>
+</section>
+{% endblock %}

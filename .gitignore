@@ -1,0 +1,23 @@
+# Variables con contraseñas y URLs de la base: nunca se suben.
+.env
+.env.*
+!.env.example
+
+# Bases de datos locales antiguas (SQLite) y temporales.
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Entorno de Python y archivos compilados.
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# Vercel CLI y editores.
+.vercel/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

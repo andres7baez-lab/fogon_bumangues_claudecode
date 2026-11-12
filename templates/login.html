@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% from "partials/_iconos.html" import logo %}
+{% block titulo %}Iniciar sesión · El Fogón Bumangués{% endblock %}
+{% block body %}
+<main class="fg-login">
+  <div class="fg-login__card">
+    <div class="fg-brand fg-brand--lg fg-brand--stack">
+      {{ logo() }}
+      <span class="fg-brand__text"><span class="fg-brand__name">El Fogón</span><span class="fg-brand__sub">Bumangués</span></span>
+    </div>
+    <section class="fg-login__panel">
+      <form method="post" class="fg-form" data-fg-validar novalidate>
+        <div>
+          <p class="fg-eyebrow">Caja · ventas del día</p>
+          <h1 class="fg-head__title">Iniciar sesión</h1>
+        </div>
+        <div class="fg-field">
+          <label class="fg-label" for="usuario">Usuario</label>
+          <input class="fg-input" id="usuario" name="usuario" autocomplete="username" required autofocus>
+          <p class="fg-error"></p>
+        </div>
+        <div class="fg-field">
+          <label class="fg-label" for="contrasena">Contraseña</label>
+          <input class="fg-input" id="contrasena" name="contrasena" type="password" autocomplete="current-password" required>
+          <p class="fg-error"></p>
+        </div>
+        <button class="fg-btn fg-btn--primary fg-btn--lg fg-btn--block" type="submit">Entrar</button>
+      </form>
+      {# Cuentas de demostración: cualquiera que abra el link puede entrar. #}
+      <section class="fg-card fg-card--flat app-cuentas-demo" aria-labelledby="cuentas-demo">
+        <h2 class="fg-card__title" id="cuentas-demo">Cuentas de demostración</h2>
+        <div class="app-filas">
+          {% for rol, usuario_demo, clave_demo in cuentas_demo %}
+          <div class="app-fila"><span>{{ rol|capitalize }}</span><span><code>{{ usuario_demo }}</code> / <code>{{ clave_demo }}</code></span></div>
+          {% endfor %}
+        </div>
+      </section>
+      {% include "partials/_aviso_demo.html" %}
+    </section>
+  </div>
+</main>
+{% endblock %}

@@ -1,0 +1,12 @@
+{# Diferencia del cierre con su color: verde si es 0, amarillo si es leve y rojo si es alta.
+   El umbral sale de reglas.UMBRAL_DIFERENCIA_LEVE (variable global "umbral_diferencia").
+   El color nunca va solo: lleva ícono (✓ ▲ ■, desde el CSS) y texto. #}
+{% macro diferencia(valor) -%}
+  {%- if valor is none -%}<span class="fg-muted">—</span>
+  {%- else -%}
+    {%- set a = valor|abs -%}
+    <span class="fg-diff {{ 'fg-diff--cero' if a == 0 else ('fg-diff--leve' if a <= umbral_diferencia else 'fg-diff--alta') }}">
+      {{- '+' if valor > 0 }}{{ valor|cop }} · {{ 'Cuadra' if valor == 0 else ('Sobrante' if valor > 0 else 'Faltante') -}}
+    </span>
+  {%- endif -%}
+{%- endmacro %}

@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block titulo %}Venta #{{ venta.id_venta }} · El Fogón Bumangués{% endblock %}
+{% block miga %}Ventas · Detalle{% endblock %}
+{% block contenido %}
+<div class="fg-head">
+  <div>
+    <p class="fg-eyebrow">{{ venta.fecha|fecha }} · {{ venta.hora }} · caja {{ venta.fecha_cierre|fecha }} ({{ venta.turno }})</p>
+    <h1 class="fg-head__title">Venta #{{ venta.id_venta }}</h1>
+    <p class="fg-head__desc">Registró {{ venta.cajero }} · Cliente: {{ venta.cliente }}
+      {% if venta.numero_identificacion != '222222222222' %}(C.C./NIT {{ venta.numero_identificacion }}){% endif %}</p>
+  </div>
+  <div class="fg-head__actions">
+    {% if venta.estado == 'activa' %}<span class="fg-badge fg-badge--ok">Activa</span>{% else %}<span class="fg-badge fg-badge--bad">Anulada</span>{% endif %}
+  </div>
+</div>
+
+{% if venta.estado == 'anulada' %}
+  <div class="fg-alert fg-alert--error" role="note">Motivo de anulación: {{ venta.motivo_anulacion }}</div>
+{% endif %}
+
+<div class="fg-grid fg-grid--aside">
+  <section class="fg-card">
+    <div class="fg-card__head"><h2 class="fg-card__title">Platos</h2></div>
+    <table class="fg-table fg-table--cards">
+      <thead><tr><th>Producto</th><th>Principio</th><th class="is-num">Cantidad</th><th class="is-num">Precio unitario</th><th class="is-num">Subtotal</th></tr></thead>
+      <tbody>
+      {% for l in lineas %}
+        <tr>
+          <td class="fg-td-title is-plato" data-label="Producto">{{ l.producto }}</td>
+          <td data-label="Principio">{{ l.principio or '—' }}</td>
+          <td class="fg-money" data-label="Cantidad">{{ l.cantidad }}</td>
+          <td class="fg-money" data-label="Precio unitario">{{ l.precio_unitario|pesos }}</td>
+          <td class="fg-money is-strong" data-label="Subtotal">{{ subtotal(l)|pesos }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+      <tfoot><tr><td colspan="4" data-label="">Total</td><td class="fg-money" data-label="Total">{{ venta.valor_total|pesos }}</td></tr></tfoot>
+    </table>
+    <p class="fg-help" style="margin-top:var(--sp-3)">El subtotal (cantidad × precio unitario) se calcula; no está guardado en la base de datos.</p>
+  </section>
+
+  <section class="fg-card">
+    <div class="fg-card__head"><h2 class="fg-card__title">Pagos</h2></div>
+    <div class="app-filas">
+      {% for p in pagos %}<div class="app-fila"><span>{{ p.metodo|capitalize }}</span><span class="fg-num">{{ p.valor|pesos }}</span></div>{% endfor %}
+    </div>
+  </section>
+</div>
+
+{% if usuario.rol == 'administrador' and venta.estado == 'activa' %}
+  {% if venta.estado_cierre == 'abierto' %}
+  <form method="post" action="{{ url_for('ventas.anular', id_venta=venta.id_venta) }}" class="fg-card fg-form"
+        data-fg-validar novalidate
+        data-confirmar="¿Seguro que desea anular la venta #{{ venta.id_venta }}? Esta acción no se puede deshacer.">
+    <h2 class="fg-card__title">Anular esta venta</h2>
+    <p class="fg-help">La venta no se borra: queda marcada como anulada y no se cuenta en el cierre de caja.</p>
+    <div class="fg-field">
+      <label class="fg-label" for="motivo">Motivo de la anulación (obligatorio)</label>
+      <textarea class="fg-textarea" id="motivo" name="motivo" rows="2" required></textarea>
+      <p class="fg-error"></p>
+    </div>
+    <div><button class="fg-btn fg-btn--danger" type="submit">Anular venta</button></div>
+  </form>
+  {% else %}
+  <p class="fg-alert fg-alert--info">Esta venta pertenece a una caja ya cerrada, por eso no se puede anular.</p>
+  {% endif %}
+{% endif %}
+
+<div class="fg-head__actions">
+  {% if caja_abierta %}<a class="fg-btn fg-btn--ghost" href="{{ url_for('ventas.lista') }}">← Volver a las ventas del turno</a>{% endif %}
+  {% if usuario.rol == 'administrador' %}<a class="fg-btn fg-btn--ghost" href="{{ url_for('caja.detalle', id_cierre=venta.id_cierre) }}">Ver la caja de esta venta</a>{% endif %}
+</div>
+{% endblock %}

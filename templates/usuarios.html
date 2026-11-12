@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block titulo %}Usuarios · El Fogón Bumangués{% endblock %}
+{% block miga %}Administración · Usuarios{% endblock %}
+{% block contenido %}
+<div class="fg-head">
+  <div>
+    <p class="fg-eyebrow">Administración</p>
+    <h1 class="fg-head__title">Usuarios</h1>
+    <p class="fg-head__desc">Las contraseñas se guardan cifradas (con hash): ni el administrador puede verlas, solo cambiarlas.</p>
+  </div>
+</div>
+
+<section class="fg-card">
+  <div class="fg-table-wrap app-scroll">
+  <table class="fg-table fg-table--cards">
+    <thead><tr><th>Nombre</th><th>Usuario</th><th>Rol</th><th>Cambiar contraseña</th></tr></thead>
+    <tbody>
+    {% for u in usuarios %}
+      <tr>
+        <td class="fg-td-title" data-label="Nombre">{{ u.nombre }}</td>
+        <td data-label="Usuario">{{ u.usuario }}</td>
+        <td data-label="Rol">
+          {% if u.id_usuario == usuario.id_usuario %}
+            <span class="fg-badge fg-badge--info">{{ u.rol }} · usted</span>
+          {% else %}
+          <form method="post" action="{{ url_for('usuarios.rol', id_usuario=u.id_usuario) }}" class="app-inline">
+            <select class="fg-select" name="rol" aria-label="Rol de {{ u.usuario }}" style="width:auto">
+              <option value="cajero" {{ 'selected' if u.rol == 'cajero' }}>cajero</option>
+              <option value="administrador" {{ 'selected' if u.rol == 'administrador' }}>administrador</option>
+            </select>
+            <button class="fg-btn fg-btn--sm fg-btn--touch" type="submit">Guardar</button>
+          </form>
+          {% endif %}
+        </td>
+        <td class="app-td-form" data-label="Contraseña">
+          <form method="post" action="{{ url_for('usuarios.contrasena', id_usuario=u.id_usuario) }}" class="app-inline" data-fg-validar novalidate>
+            <div class="fg-field" style="flex:1 1 170px">
+              <input class="fg-input" type="password" name="contrasena" placeholder="Nueva contraseña" autocomplete="new-password" required minlength="6" aria-label="Nueva contraseña de {{ u.usuario }}">
+              <p class="fg-error"></p>
+            </div>
+            <button class="fg-btn fg-btn--sm fg-btn--touch" type="submit">Cambiar</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section class="fg-card">
+  <div class="fg-card__head"><h2 class="fg-card__title">Nuevo usuario</h2></div>
+  <form method="post" action="{{ url_for('usuarios.nuevo') }}" class="app-form-row" data-fg-validar novalidate>
+    <div class="fg-field">
+      <label class="fg-label" for="nu-nombre">Nombre completo</label>
+      <input class="fg-input" id="nu-nombre" name="nombre" required>
+      <p class="fg-error"></p>
+    </div>
+    <div class="fg-field">
+      <label class="fg-label" for="nu-usuario">Usuario (para entrar)</label>
+      <input class="fg-input" id="nu-usuario" name="usuario" required autocomplete="off">
+      <p class="fg-error"></p>
+    </div>
+    <div class="fg-field">
+      <label class="fg-label" for="nu-clave">Contraseña</label>
+      <input class="fg-input" id="nu-clave" type="password" name="contrasena" required minlength="6" autocomplete="new-password">
+      <p class="fg-error"></p>
+    </div>
+    <div class="fg-field">
+      <label class="fg-label" for="nu-rol">Rol</label>
+      <select class="fg-select" id="nu-rol" name="rol"><option value="cajero">cajero</option><option value="administrador">administrador</option></select>
+    </div>
+    <div><button class="fg-btn fg-btn--primary fg-btn--block" type="submit">Crear usuario</button></div>
+  </form>
+</section>
+{% endblock %}

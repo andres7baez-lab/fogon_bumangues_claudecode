@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% from "_diferencia.html" import diferencia %}
+{% block titulo %}Cierre de caja · El Fogón Bumangués{% endblock %}
+{% block miga %}Caja · Cierre{% endblock %}
+{% block contenido %}
+<div class="fg-head">
+  <div>
+    <p class="fg-eyebrow">{{ c.fecha|fecha }} · turno {{ c.turno }}</p>
+    <h1 class="fg-head__title">Cierre de caja</h1>
+    <p class="fg-head__desc">Abrió {{ abrio }} a las {{ c.hora_apertura }}{% if c.hora_cierre %} · cerró a las {{ c.hora_cierre }}{% endif %}.</p>
+  </div>
+  <div class="fg-head__actions">
+    {% if c.estado == 'abierto' %}<span class="fg-badge fg-badge--ok">Abierta</span>{% else %}<span class="fg-badge fg-badge--muted">Cerrada</span>{% endif %}
+  </div>
+</div>
+
+<div class="fg-grid fg-grid--stats">
+  <div class="fg-stat fg-stat--hero"><span class="fg-stat__label">Efectivo esperado</span>
+    <span class="fg-stat__value" data-fg-count="{{ r.efectivo_esperado }}">{{ r.efectivo_esperado|pesos }}</span>
+    <span class="fg-stat__sub">Base {{ c.base_inicial|pesos }} + efectivo de ventas activas</span></div>
+  <div class="fg-stat"><span class="fg-stat__label">Total vendido</span>
+    <span class="fg-stat__value" data-fg-count="{{ r.total_vendido }}">{{ r.total_vendido|pesos }}</span>
+    <span class="fg-stat__sub">{{ r.ventas_activas }} ventas activas</span></div>
+  <div class="fg-stat"><span class="fg-stat__label">Transferencias de ventas</span>
+    <span class="fg-stat__value" data-fg-count="{{ r.transferencias_ventas }}">{{ r.transferencias_ventas|pesos }}</span></div>
+  <div class="fg-stat"><span class="fg-stat__label">Anuladas (no cuentan)</span>
+    <span class="fg-stat__value" data-fg-count="{{ r.ventas_anuladas }}" data-fg-entero>{{ r.ventas_anuladas }}</span>
+    <span class="fg-stat__sub">{{ r.total_anulado|pesos }}</span></div>
+</div>
+
+<div class="fg-grid fg-grid--2">
+  <section class="fg-card">
+    <div class="fg-card__head"><h2 class="fg-card__title">Efectivo</h2></div>
+    <div class="app-filas">
+      <div class="app-fila"><span>Base inicial</span><span class="fg-num">{{ c.base_inicial|pesos }}</span></div>
+      <div class="app-fila"><span>+ Pagos en efectivo (ventas activas)</span><span class="fg-num">{{ r.efectivo_ventas|pesos }}</span></div>
+      <div class="app-fila app-fila--total"><span>= Efectivo esperado</span><span class="fg-num">{{ r.efectivo_esperado|pesos }}</span></div>
+      {% if c.estado == 'cerrado' %}
+      <div class="app-fila"><span>Efectivo contado</span><span class="fg-num">{{ c.efectivo_contado|pesos }}</span></div>
+      <div class="app-fila app-fila--total"><span>Diferencia en efectivo</span>{{ diferencia(r.diferencia_efectivo) }}</div>
+      {% endif %}
+    </div>
+  </section>
+  <section class="fg-card">
+    <div class="fg-card__head"><h2 class="fg-card__title">Transferencias</h2></div>
+    <div class="app-filas">
+      <div class="app-fila"><span>Pagos por transferencia (ventas activas)</span><span class="fg-num">{{ r.transferencias_ventas|pesos }}</span></div>
+      {% if c.estado == 'cerrado' %}
+      <div class="app-fila"><span>Transferencias registradas (banco)</span><span class="fg-num">{{ c.transferencias_registradas|pesos }}</span></div>
+      <div class="app-fila app-fila--total"><span>Diferencia en transferencias</span>{{ diferencia(r.diferencia_transferencias) }}</div>
+      {% endif %}
+    </div>
+  </section>
+</div>
+
+{% if c.estado == 'abierto' %}
+<form method="post" class="fg-card fg-form" id="form-cierre" data-fg-validar novalidate
+      data-confirmar="¿Cerrar la caja? Después de cerrarla no se podrán registrar ni anular ventas de este turno.">
+  <div>
+    <h2 class="fg-card__title">Cerrar la caja</h2>
+    <p class="fg-help">Cuente el efectivo que hay en la caja (incluida la base) y revise en la app del banco el total de transferencias recibidas en el turno.
+      Diferencia en verde si es $0, en amarillo hasta {{ umbral_diferencia|pesos }} y en rojo si es mayor.</p>
+  </div>
+  <div class="fg-grid fg-grid--2">
+    <div class="fg-field">
+      <label class="fg-label" for="efectivo_contado">Efectivo contado</label>
+      <div class="fg-affix"><span class="fg-affix__pre">$</span>
+        <input class="fg-input fg-input--money fg-input--lg" id="efectivo_contado" name="efectivo_contado" inputmode="numeric" required
+               value="{{ formulario.get('efectivo_contado', '') }}">
+      </div>
+      <p class="fg-error"></p>
+      <div>Diferencia: <span id="dif-efectivo" class="fg-muted">—</span></div>
+    </div>
+    <div class="fg-field">
+      <label class="fg-label" for="transferencias_registradas">Transferencias registradas en el banco</label>
+      <div class="fg-affix"><span class="fg-affix__pre">$</span>
+        <input class="fg-input fg-input--money fg-input--lg" id="transferencias_registradas" name="transferencias_registradas" inputmode="numeric" required
+               value="{{ formulario.get('transferencias_registradas', '') }}">
+      </div>
+      <p class="fg-error"></p>
+      <div>Diferencia: <span id="dif-transf" class="fg-muted">—</span></div>
+    </div>
+  </div>
+  <div><button class="fg-btn fg-btn--primary fg-btn--lg" type="submit">Cerrar caja</button></div>
+</form>
+{% endif %}
+
+<section class="fg-card">
+  <div class="fg-card__head"><h2 class="fg-card__title">Ventas de esta caja</h2></div>
+  {% include "_tabla_ventas.html" %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+{% if c.estado == 'abierto' %}
+<script>
+// Calcula las diferencias mientras se escriben los valores (Regla 10). El servidor las recalcula al cerrar.
+// UMBRAL viene de reglas.UMBRAL_DIFERENCIA_LEVE: 0 = verde, hasta UMBRAL = amarillo, más = rojo.
+const ESPERADO = {{ r.efectivo_esperado }}, TRANSF = {{ r.transferencias_ventas }}, UMBRAL = {{ umbral_diferencia }};
+const miles = n => String(Math.abs(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+const leer = id => { const t = document.getElementById(id).value.replace(/\D/g, ""); return t === "" ? null : parseInt(t, 10); };
+function mostrar(idDestino, valor) {
+  const el = document.getElementById(idDestino);
+  if (valor === null) { el.textContent = "—"; el.className = "fg-muted"; return; }
+  const a = Math.abs(valor);
+  el.className = "fg-diff " + (a === 0 ? "fg-diff--cero" : (a <= UMBRAL ? "fg-diff--leve" : "fg-diff--alta"));
+  el.textContent = (valor > 0 ? "+$" : valor < 0 ? "−$" : "$") + miles(valor) + " · " + (valor === 0 ? "Cuadra" : valor > 0 ? "Sobrante" : "Faltante");
+}
+function recalcular() {
+  const e = leer("efectivo_contado"), t = leer("transferencias_registradas");
+  mostrar("dif-efectivo", e === null ? null : e - ESPERADO);
+  mostrar("dif-transf", t === null ? null : t - TRANSF);
+}
+["efectivo_contado", "transferencias_registradas"].forEach(id => {
+  const campo = document.getElementById(id);
+  campo.addEventListener("input", recalcular);
+  campo.addEventListener("blur", () => { const v = leer(id); campo.value = v === null ? "" : miles(v); });
+});
+recalcular();
+</script>
+{% endif %}
+{% endblock %}

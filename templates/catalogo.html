@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block titulo %}Catálogo · El Fogón Bumangués{% endblock %}
+{% block miga %}Administración · Catálogo{% endblock %}
+{% block contenido %}
+<div class="fg-head">
+  <div>
+    <p class="fg-eyebrow">Administración</p>
+    <h1 class="fg-head__title">Catálogo</h1>
+    <p class="fg-head__desc">Principios del día, platos, bebidas y precios. El cajero solo ve lo que está activo.</p>
+  </div>
+</div>
+
+<!-- ================= Principios del día ================= -->
+<section class="fg-card" id="principios">
+  <div class="fg-card__head">
+    <h2 class="fg-card__title">Principios del día</h2>
+    <span class="fg-help">Un principio que ya se sirvió no se puede eliminar, solo desactivar.</span>
+  </div>
+  <div class="fg-table-wrap app-scroll">
+  <table class="fg-table fg-table--cards">
+    <thead><tr><th>Nombre</th><th>Estado</th><th class="is-num">Ventas</th><th class="is-num">Acciones</th></tr></thead>
+    <tbody>
+    {% for pr in principios %}
+      {% set usos = usos_principio.get(pr.id_principio, 0) %}
+      <tr id="pr{{ pr.id_principio }}">
+        <td class="fg-td-title app-td-form" data-label="Nombre">
+          <form method="post" action="{{ url_for('catalogo.editar_principio', id_principio=pr.id_principio) }}" class="app-inline">
+            <input type="hidden" name="ancla" value="#principios">
+            <input class="fg-input" name="nombre" value="{{ pr.nombre }}" required aria-label="Nombre del principio" style="flex:1 1 160px">
+            <button class="fg-btn fg-btn--sm fg-btn--touch" type="submit">Guardar nombre</button>
+          </form>
+        </td>
+        <td data-label="Estado">{% if pr.activo %}<span class="fg-badge fg-badge--ok">Activo hoy</span>{% else %}<span class="fg-badge fg-badge--muted">Inactivo</span>{% endif %}</td>
+        <td class="fg-money" data-label="Ventas">{{ usos }}</td>
+        <td class="fg-td-actions">
+          <div class="app-acciones">
+            <form method="post" action="{{ url_for('catalogo.activo_principio', id_principio=pr.id_principio) }}">
+              <input type="hidden" name="activo" value="{{ 0 if pr.activo else 1 }}">
+              <input type="hidden" name="ancla" value="#principios">
+              <button class="fg-btn fg-btn--sm fg-btn--touch" type="submit">{{ 'Desactivar' if pr.activo else 'Activar' }}</button>
+            </form>
+            {% if usos == 0 %}
+            <form method="post" action="{{ url_for('catalogo.eliminar_principio', id_principio=pr.id_principio) }}"
+                  data-confirmar="¿Eliminar el principio «{{ pr.nombre }}»? Esta acción no se puede deshacer.">
+              <input type="hidden" name="ancla" value="#principios">
+              <button class="fg-btn fg-btn--sm fg-btn--touch fg-btn--danger" type="submit">Eliminar</button>
+            </form>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <form method="post" action="{{ url_for('catalogo.nuevo_principio') }}" class="app-form-row" style="margin-top:var(--sp-4)" data-fg-validar novalidate>
+    <input type="hidden" name="ancla" value="#principios">
+    <div class="fg-field">
+      <label class="fg-label" for="nuevo-principio">Nuevo principio</label>
+      <input class="fg-input" id="nuevo-principio" name="nombre" placeholder="Ej: Lentejas" required>
+      <p class="fg-error"></p>
+    </div>
+    <div><button class="fg-btn fg-btn--primary fg-btn--block" type="submit">Agregar principio</button></div>
+  </form>
+</section>
+
+<!-- ================= Productos ================= -->
+<section class="fg-card" id="productos">
+  <div class="fg-card__head">
+    <h2 class="fg-card__title">Productos</h2>
+  </div>
+  <p class="fg-help" style="margin-bottom:var(--sp-4)">Cambiar un precio solo afecta las ventas nuevas: cada venta guarda el precio que tenía el producto en ese momento.
+    Un producto con precio $0 no se puede activar. Solo se pueden eliminar los productos que nunca se han vendido; los demás se desactivan.</p>
+  {% set nombres = {'almuerzo': 'Almuerzos', 'bebida': 'Bebidas', 'otro': 'Otros'} %}
+  {% for categoria, grupo in productos|groupby('categoria') %}
+  <h3 class="fg-cat" style="margin:var(--sp-4) 0 var(--sp-2)">{{ nombres[categoria] }}</h3>
+  <div class="fg-table-wrap app-scroll">
+  <table class="fg-table fg-table--cards">
+    <thead><tr><th>Producto</th><th>Principio</th><th>Precio</th><th>Estado</th><th class="is-num">Ventas</th><th class="is-num">Acciones</th></tr></thead>
+    <tbody>
+      {% for p in grupo %}
+      {% set usos = usos_producto.get(p.id_producto, 0) %}
+      <tr id="p{{ p.id_producto }}">
+        <td class="fg-td-title is-plato" data-label="Producto">{{ p.nombre }}</td>
+        <td data-label="Lleva principio">{{ 'Sí' if p.incluye_principio else 'No' }}</td>
+        <td data-label="Precio">
+          <form method="post" action="{{ url_for('catalogo.precio', id_producto=p.id_producto) }}" class="app-inline">
+            <input type="hidden" name="ancla" value="#p{{ p.id_producto }}">
+            <div class="fg-affix"><span class="fg-affix__pre">$</span>
+              <input class="fg-input fg-input--money app-precio" name="precio_unitario" value="{{ p.precio_unitario|pesos|replace('$', '') }}" inputmode="numeric" aria-label="Precio de {{ p.nombre }}">
+            </div>
+            <button class="fg-btn fg-btn--sm fg-btn--touch" type="submit">Guardar</button>
+          </form>
+        </td>
+        <td data-label="Estado">{% if p.activo %}<span class="fg-badge fg-badge--ok">Activo</span>{% else %}<span class="fg-badge fg-badge--muted">Inactivo</span>{% endif %}</td>
+        <td class="fg-money" data-label="Ventas">{{ usos }}</td>
+        <td class="fg-td-actions">
+          <div class="app-acciones">
+            <a class="fg-btn fg-btn--sm fg-btn--touch" href="{{ url_for('catalogo.editar_producto', id_producto=p.id_producto) }}">Editar</a>
+            <form method="post" action="{{ url_for('catalogo.activo_producto', id_producto=p.id_producto) }}">
+              <input type="hidden" name="activo" value="{{ 0 if p.activo else 1 }}">
+              <input type="hidden" name="ancla" value="#p{{ p.id_producto }}">
+              <button class="fg-btn fg-btn--sm fg-btn--touch" type="submit">{{ 'Desactivar' if p.activo else 'Activar' }}</button>
+            </form>
+            {% if usos == 0 %}
+            <form method="post" action="{{ url_for('catalogo.eliminar_producto', id_producto=p.id_producto) }}"
+                  data-confirmar="¿Eliminar «{{ p.nombre }}» del catálogo? Esta acción no se puede deshacer.">
+              <input type="hidden" name="ancla" value="#productos">
+              <button class="fg-btn fg-btn--sm fg-btn--touch fg-btn--danger" type="submit">Eliminar</button>
+            </form>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% endfor %}
+</section>
+
+<section class="fg-card">
+  <div class="fg-card__head"><h2 class="fg-card__title">Nuevo producto</h2></div>
+  <form method="post" action="{{ url_for('catalogo.nuevo_producto') }}" class="app-form-row" data-fg-validar novalidate>
+    <div class="fg-field">
+      <label class="fg-label" for="np-nombre">Nombre</label>
+      <input class="fg-input" id="np-nombre" name="nombre" required>
+      <p class="fg-error"></p>
+    </div>
+    <div class="fg-field">
+      <label class="fg-label" for="np-categoria">Categoría</label>
+      <select class="fg-select" id="np-categoria" name="categoria">
+        <option value="almuerzo">Almuerzo</option>
+        <option value="bebida">Bebida</option>
+        <option value="otro">Otro</option>
+      </select>
+    </div>
+    <div class="fg-field">
+      <label class="fg-label" for="np-precio">Precio</label>
+      <div class="fg-affix"><span class="fg-affix__pre">$</span>
+        <input class="fg-input fg-input--money" id="np-precio" name="precio_unitario" inputmode="numeric" placeholder="14.500" required>
+      </div>
+      <p class="fg-error"></p>
+    </div>
+    <div class="fg-field">
+      <label class="fg-label" for="np-principio">¿Lleva principio? (solo almuerzos)</label>
+      <select class="fg-select" id="np-principio" name="incluye_principio"><option value="1">Sí</option><option value="0">No</option></select>
+    </div>
+    <div class="fg-field">
+      <label class="fg-label" for="np-activo">Estado</label>
+      <select class="fg-select" id="np-activo" name="activo"><option value="1">Activo</option><option value="0">Inactivo</option></select>
+    </div>
+    <div><button class="fg-btn fg-btn--primary fg-btn--block" type="submit">Crear producto</button></div>
+  </form>
+</section>
+{% endblock %}

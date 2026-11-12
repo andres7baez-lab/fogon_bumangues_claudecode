@@ -1,0 +1,26 @@
+{# Íconos del menú (SVG en línea, toman el color del texto). Uso: {{ icono('venta') }} #}
+{% macro icono(nombre) -%}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+{%- if nombre == 'venta' -%}<path d="M4 4h2l2.2 10.2a2 2 0 0 0 2 1.6h6.9a2 2 0 0 0 1.9-1.4L21 8H7"/><circle cx="10" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/>
+{%- elif nombre == 'abrir' -%}<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a4 4 0 0 1 8 0"/><path d="M12 12v3"/>
+{%- elif nombre == 'lista' -%}<path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/>
+{%- elif nombre == 'cierre' -%}<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><path d="M12 14.5v2.5"/>
+{%- elif nombre == 'catalogo' -%}<path d="M5 3v8a3 3 0 0 0 6 0V3M8 3v18"/><path d="M16 21V3c2.5 1 4 3.5 4 7s-1.5 4-4 4"/>
+{%- elif nombre == 'reportes' -%}<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>
+{%- elif nombre == 'usuarios' -%}<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14a6 6 0 0 1 3 6"/>
+{%- elif nombre == 'tema' -%}<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>
+{%- elif nombre == 'salir' -%}<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 16l-4-4 4-4M6 12h10"/>
+{%- endif -%}
+</svg>
+{%- endmacro %}
+
+{# Logo con las clases de color de la capa visual (se adapta al tema). #}
+{% macro logo(clase='fg-brand__icon') -%}
+<svg class="{{ clase }}" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+  <g class="fg-ico-steam" stroke-width="2.4" stroke-linecap="round"><path d="M21 15c-3-3 3-5 0-9"/><path d="M43 15c-3-3 3-5 0-9"/></g>
+  <path class="fg-ico-flame" d="M32 8c3.6 3 5.2 5.8 5.2 8.6a5.2 5.2 0 0 1-10.4 0c0-2.1 1-3.8 2.4-5.4.3 1.4 1 2.3 2 2.8-.4-2.1.1-4.1.8-6z"/>
+  <path class="fg-ico-dome" stroke-width="4" stroke-linecap="round" d="M10 45a22 22 0 0 1 44 0"/>
+  <path class="fg-ico-dome" stroke-width="2.4" stroke-linecap="round" opacity=".6" d="M19 38a14 14 0 0 1 8-9"/>
+  <path class="fg-ico-tray" stroke-width="4.5" stroke-linecap="round" d="M5 50h54"/>
+</svg>
+{%- endmacro %}

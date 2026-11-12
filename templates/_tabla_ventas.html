@@ -1,0 +1,29 @@
+{# Tabla de ventas reutilizada en "Ventas del turno" y en el detalle de un cierre.
+   En celular cada fila se vuelve una tarjeta (fg-table--cards + data-label). #}
+<div class="fg-table-wrap app-scroll">
+<table class="fg-table fg-table--cards">
+  <thead>
+    <tr><th>#</th><th>Hora</th><th>Cliente</th><th>Pagos</th><th class="is-num">Total</th><th>Estado</th><th></th></tr>
+  </thead>
+  <tbody>
+  {% for v in ventas %}
+    <tr class="{{ 'is-void' if v.estado == 'anulada' }}">
+      <td class="fg-td-title fg-num" data-label="Venta">#{{ v.id_venta }}</td>
+      <td class="fg-num" data-label="Hora">{{ v.hora }}</td>
+      <td data-label="Cliente">{{ v.cliente }}</td>
+      <td data-label="Pagos">
+        <span class="app-celda-texto">{% for p in pagos[v.id_venta] %}{{ p.metodo|capitalize }} <span class="fg-num">{{ p.valor|pesos }}</span>{% if not loop.last %} + {% endif %}{% endfor %}</span>
+      </td>
+      <td class="fg-money is-strong" data-label="Total">{{ v.valor_total|pesos }}</td>
+      <td data-label="Estado">
+        {% if v.estado == 'activa' %}<span class="fg-badge fg-badge--ok">Activa</span>
+        {% else %}<span class="fg-badge fg-badge--bad" title="{{ v.motivo_anulacion }}">Anulada</span>{% endif %}
+      </td>
+      <td class="fg-td-actions"><a class="fg-btn fg-btn--sm fg-btn--touch" href="{{ url_for('ventas.detalle', id_venta=v.id_venta) }}">Ver detalle</a></td>
+    </tr>
+  {% else %}
+    <tr><td colspan="7" class="fg-empty">Todavía no hay ventas.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>

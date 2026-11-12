@@ -1,0 +1,142 @@
+<!doctype html>
+{% from "partials/_iconos.html" import icono, logo %}
+<html lang="es-CO" data-theme="dark">
+<head>
+  {% include "partials/_head.html" %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <title>{% block titulo %}El Fogón Bumangués{% endblock %}</title>
+</head>
+<body>
+  {% include "partials/_splash.html" %}   {# pantalla de carga + barra de progreso + contenedor de avisos #}
+
+  {# Cada flash() de Flask se convierte en un aviso (toast) que se va solo. #}
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% for cat, m in msgs %}<div class="fg-flash" data-tipo="{{ 'ok' if cat in ['ok', 'success'] else ('error' if cat in ['error', 'danger'] else 'info') }}" hidden>{{ m }}</div>{% endfor %}
+  {% endwith %}
+
+  {% block body %}
+  {# ---------- Menú: (texto, texto corto, ícono, url, endpoints activos, deshabilitado) ---------- #}
+  {% set ep = request.endpoint %}
+  {% set es_admin = usuario and usuario.rol == 'administrador' %}
+  {% set menu = [] %}
+  {% if caja_abierta %}
+    {% set _ = menu.append(('Nueva venta', 'Venta', 'venta', url_for('ventas.nueva'), ['ventas.nueva'], false)) %}
+  {% else %}
+    {% set _ = menu.append(('Abrir caja', 'Abrir', 'abrir', url_for('caja.abrir'), ['caja.abrir', 'ventas.nueva'], false)) %}
+  {% endif %}
+  {% set _ = menu.append(('Ventas del turno', 'Turno', 'lista', url_for('ventas.lista'), ['ventas.lista', 'ventas.detalle'], not caja_abierta)) %}
+  {% if es_admin %}
+    {% set _ = menu.append(('Cierre de caja', 'Cierre', 'cierre', url_for('caja.cerrar'), ['caja.cerrar', 'caja.detalle'], not caja_abierta)) %}
+    {% set _ = menu.append(('Catálogo', 'Catálogo', 'catalogo', url_for('catalogo.productos'), ['catalogo.productos', 'catalogo.editar_producto'], false)) %}
+    {% set _ = menu.append(('Reportes', 'Reportes', 'reportes', url_for('reportes.inicio'), ['reportes.inicio'], false)) %}
+    {% set _ = menu.append(('Usuarios', 'Usuarios', 'usuarios', url_for('usuarios.lista'), ['usuarios.lista'], false)) %}
+  {% endif %}
+
+  {% macro estado_caja() -%}
+    {%- if caja_abierta -%}<span class="fg-status">Caja abierta<span class="app-status-detalle"> · {{ caja_abierta.fecha|fecha }} · {{ caja_abierta.turno }}</span></span>
+    {%- else -%}<span class="fg-status fg-status--cerrada">Caja cerrada</span>{%- endif -%}
+  {%- endmacro %}
+
+  <div class="fg-app">
+    <aside class="fg-sidebar">
+      <a class="fg-brand" href="{{ url_for('inicio') }}">
+        {{ logo() }}
+        <span class="fg-brand__text"><span class="fg-brand__name">El Fogón</span><span class="fg-brand__sub">Bumangués</span></span>
+      </a>
+      <nav class="fg-nav" aria-label="Menú principal">
+        {% for texto, corto, ico, url, activos, apagado in menu %}
+        <a class="fg-nav__item" href="{{ url }}" {% if ep in activos %}aria-current="page"{% endif %}
+           {% if apagado %}aria-disabled="true" tabindex="-1"{% endif %}>
+          {{ icono(ico) }}<span class="fg-nav__label">{{ texto }}</span>
+        </a>
+        {% endfor %}
+      </nav>
+      <div class="fg-sidebar__foot">{{ estado_caja() }}</div>
+    </aside>
+
+    <div class="fg-main">
+      <header class="fg-topbar">
+        <a class="fg-brand fg-topbar__brand" href="{{ url_for('inicio') }}">
+          {{ logo() }}<span class="fg-brand__text"><span class="fg-brand__name">El Fogón</span></span>
+        </a>
+        <span class="fg-topbar__crumb">{% block miga %}{% endblock %}</span>
+        <span class="fg-topbar__spacer"></span>
+        <span class="app-topbar-status">{{ estado_caja() }}</span>
+        <span class="app-usuario fg-muted">{{ usuario.nombre }} · {{ usuario.rol }}</span>
+        <button type="button" class="fg-btn fg-btn--ghost fg-btn--icon" data-fg-tema aria-label="Cambiar a modo claro">{{ icono('tema') }}</button>
+        <a class="fg-btn fg-btn--ghost fg-btn--icon" href="{{ url_for('auth.salir') }}" aria-label="Cerrar sesión" title="Cerrar sesión">{{ icono('salir') }}</a>
+      </header>
+      <main class="fg-content">
+        {% include "partials/_aviso_demo.html" %}
+        {% block contenido %}{% endblock %}
+      </main>
+    </div>
+
+    <nav class="fg-bottomnav" aria-label="Menú principal">
+      {% for texto, corto, ico, url, activos, apagado in menu %}
+      <a href="{{ url }}" {% if ep in activos %}aria-current="page"{% endif %} {% if apagado %}aria-disabled="true" tabindex="-1"{% endif %}>{{ icono(ico) }}{{ corto }}</a>
+      {% endfor %}
+    </nav>
+  </div>
+  {% endblock %}
+
+  <script>
+  // =====================================================================
+  // Validación y confirmación de formularios (usa FG de fogon.js).
+  //  · <form data-fg-validar>: revisa campos obligatorios, mínimos y montos
+  //    y marca el error con FG.error() en lugar de la burbuja del navegador.
+  //  · <form data-confirmar="¿Seguro…?">: pide confirmación en un diálogo
+  //    dentro de la página. No se usa la ventana nativa window.confirm porque
+  //    algunos navegadores la bloquean y devuelven "No" sin mostrar nada.
+  //  El servidor vuelve a validar todo: esto solo ayuda al usuario.
+  // =====================================================================
+  (function () {
+    function validar(form) {
+      var primero = null;
+      form.querySelectorAll("input, select, textarea").forEach(function (c) {
+        if (c.type === "hidden" || c.disabled || !c.closest(".fg-field")) return;
+        var v = (c.value || "").trim(), msg = "";
+        if (c.required && !v) msg = "Este campo es obligatorio.";
+        else if (v && c.classList.contains("fg-input--money") && !/^[\d.\s$]+$/.test(v)) msg = "Escriba solo números, sin decimales.";
+        else if (v && c.minLength > 0 && v.length < c.minLength) msg = "Debe tener al menos " + c.minLength + " caracteres.";
+        if (msg) { if (!primero) { primero = c; FG.error(c, msg); } else { FG.error(c, msg); } }
+      });
+      if (primero) primero.focus();
+      return !primero;
+    }
+
+    function confirmar(form) {
+      var fondo = document.createElement("div");
+      fondo.className = "fg-dialog-backdrop";
+      fondo.innerHTML = '<div class="fg-dialog" role="alertdialog" aria-modal="true" aria-labelledby="fg-dlg-txt">' +
+        '<p id="fg-dlg-txt" class="fg-section-title"></p>' +
+        '<div class="fg-dialog__actions">' +
+        '<button type="button" class="fg-btn" data-no>Cancelar</button>' +
+        '<button type="button" class="fg-btn fg-btn--danger-solid" data-si>Sí, confirmar</button></div></div>';
+      fondo.querySelector("p").textContent = form.dataset.confirmar;
+      var cerrar = function () { fondo.remove(); document.removeEventListener("keydown", tecla); };
+      var tecla = function (e) { if (e.key === "Escape") cerrar(); };
+      fondo.querySelector("[data-no]").onclick = cerrar;
+      fondo.addEventListener("click", function (e) { if (e.target === fondo) cerrar(); });
+      fondo.querySelector("[data-si]").onclick = function () {
+        this.disabled = true;                 // evita doble envío
+        form.dataset.confirmado = "1";
+        if (window.FG && FG.progreso) FG.progreso.inicio();
+        form.submit();                        // envía sin volver a pasar por aquí
+      };
+      document.addEventListener("keydown", tecla);
+      document.body.appendChild(fondo);
+      fondo.querySelector("[data-si]").focus();
+    }
+
+    document.addEventListener("submit", function (e) {
+      var form = e.target;
+      if (e.defaultPrevented) return;
+      if (form.hasAttribute("data-fg-validar") && !validar(form)) { e.preventDefault(); return; }
+      if (form.dataset.confirmar && form.dataset.confirmado !== "1") { e.preventDefault(); confirmar(form); }
+    });
+  })();
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
