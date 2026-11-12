@@ -64,6 +64,39 @@ class DatosDeDemo(unittest.TestCase):
             self.assertEqual(precios[nombre], precio, nombre)
         self.assertEqual(precios["Costillitas de cerdo"], 45500)
 
+    def test_bebidas_con_precio_y_activas(self):
+        for nombre, precio in seed.BEBIDAS:
+            p = self.con.execute("SELECT * FROM PRODUCTO WHERE nombre = %s", (nombre,)).fetchone()
+            self.assertEqual((p["precio_unitario"], p["activo"], p["categoria"]), (precio, 1, "bebida"), nombre)
+
+
+class SeedRespetaElCatalogo(unittest.TestCase):
+    def setUp(self):
+        self.con = preparar_base()
+
+    def tearDown(self):
+        self.con.close()
+
+    def precio_activo(self, nombre):
+        return tuple(self.con.execute(
+            "SELECT precio_unitario, activo FROM PRODUCTO WHERE nombre = %s", (nombre,)).fetchone())
+
+    def test_no_sobrescribe_precios_cambiados_por_el_administrador(self):
+        self.con.execute("UPDATE PRODUCTO SET precio_unitario = 17000 WHERE nombre = 'Bandeja paisa'")
+        self.con.execute("UPDATE PRODUCTO SET precio_unitario = 5000 WHERE nombre = 'Jugo Hit'")
+        self.con.execute("UPDATE PRODUCTO SET activo = 0 WHERE nombre = 'Agua'")
+        seed.cargar_datos_base(self.con)
+        self.assertEqual(self.precio_activo("Bandeja paisa"), (17000, 1))
+        self.assertEqual(self.precio_activo("Jugo Hit"), (5000, 1))
+        self.assertEqual(self.precio_activo("Agua"), (3000, 0))
+
+    def test_bebidas_viejas_en_cero_reciben_su_precio(self):
+        # Así quedaron las bases cargadas antes de tener los precios de las bebidas.
+        self.con.execute("UPDATE PRODUCTO SET precio_unitario = 0, activo = 0 WHERE categoria = 'bebida'")
+        seed.cargar_datos_base(self.con)
+        for nombre, precio in seed.BEBIDAS:
+            self.assertEqual(self.precio_activo(nombre), (precio, 1), nombre)
+
 
 class ReinicioDeLaDemo(unittest.TestCase):
     def test_reset_borra_lo_de_los_visitantes(self):
@@ -73,6 +106,7 @@ class ReinicioDeLaDemo(unittest.TestCase):
             hoy = reglas.ahora_colombia().date().isoformat()
             reglas.abrir_caja(con, hoy, "almuerzo", 0, id_cajero)     # un visitante abre la caja de hoy
             con.execute("UPDATE USUARIO SET rol = 'cajero' WHERE usuario = 'admin'")  # y daña la cuenta admin
+            con.execute("UPDATE PRODUCTO SET precio_unitario = 9999, activo = 0 WHERE nombre = 'Agua'")
             seed.vaciar_base(con)
             seed.cargar_datos_base(con)
             seed.cargar_demo(con, dias=2)
@@ -81,6 +115,8 @@ class ReinicioDeLaDemo(unittest.TestCase):
             self.assertEqual(len(fechas), 2)
             rol = con.execute("SELECT rol FROM USUARIO WHERE usuario = 'admin'").fetchone()[0]
             self.assertEqual(rol, "administrador")
+            agua = con.execute("SELECT precio_unitario, activo FROM PRODUCTO WHERE nombre = 'Agua'").fetchone()
+            self.assertEqual(tuple(agua), (3000, 1))  # --reset vuelve a los precios del seed
             self.assertEqual(con.execute("SELECT MIN(id_venta) FROM VENTA").fetchone()[0], 1)
         finally:
             con.close()

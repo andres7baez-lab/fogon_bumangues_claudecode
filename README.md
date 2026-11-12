@@ -104,6 +104,8 @@ Crea lo que falte: usuarios de demo, métodos de pago, cliente «Consumidor fina
 
 Se puede correr las veces que se quiera: **no duplica** nada. Si se corre unos días después, solo agrega los días que falten para completar los 30. También devuelve las cuentas `admin` y `cajero` a su contraseña y rol de demo.
 
+**Precios:** `seed.py` **no cambia** los productos que ya existen, así que los precios, nombres y estados que el administrador cambie desde *Catálogo* se conservan. La única excepción son las bebidas que sigan en $0 e inactivas (como se cargaban antes de tener precio): reciben su precio y se activan. Solo `--reset` devuelve todo el catálogo a los precios de `seed.py`.
+
 ```bash
 python seed.py --reset
 ```
@@ -299,14 +301,14 @@ fogon_bumangues/
 1. El campo **"Recibido"** solo calcula las vueltas; en `PAGO` se guarda el valor aplicado a la venta.
 2. Solo se anulan **ventas de la caja abierta**.
 3. **Una sola caja abierta a la vez.**
-4. Un producto con precio $0 no se puede activar (por eso las bebidas sin precio están inactivas).
+4. Un producto con precio $0 no se puede activar.
 5. Cerrar caja y anular son **solo del administrador**; `CIERRE_CAJA.id_usuario` es quien **abrió** la caja.
 6. **Colores de la diferencia:** verde $0, amarillo hasta $2.000 (valor absoluto), rojo más. El umbral está en la constante `UMBRAL_DIFERENCIA_LEVE` de `reglas.py`.
 7. Los archivos estáticos están en `public/static/` porque Vercel recomienda servirlos desde `public/`; Flask usa la misma carpeta en local, así que las direcciones `/static/...` son iguales en ambos.
 
 ### Datos por confirmar con el restaurante
 - **Costillitas de cerdo — $45.500**: parece un error del menú (los demás platos están entre $13.500 y $17.000).
-- **Bebidas** (Gaseosa personal Postobón, Jugo Hit, Agua, Mr Tea): en $0 e inactivas hasta fijar el precio.
+- **Bebidas**: Gaseosa personal Postobón $4.500, Jugo Hit $4.000, Agua $3.000 y Mr Tea $4.000, activas.
 
 ---
 

@@ -72,8 +72,13 @@ ALMUERZOS = [
     ("Almuerzo con papa a la francesa", 17000, 1),
 ]
 
-# Bebidas sin precio todavía: se cargan en $0 e inactivas.
-BEBIDAS = ["Gaseosa personal Postobón", "Jugo Hit", "Agua", "Mr Tea"]
+# (nombre, precio) — bebidas, activas.
+BEBIDAS = [
+    ("Gaseosa personal Postobón", 4500),
+    ("Jugo Hit", 4000),
+    ("Agua", 3000),
+    ("Mr Tea", 4000),
+]
 
 OTROS = [("Empaque icopor", 1000)]
 
@@ -125,13 +130,23 @@ def cargar_datos_base(con):
             [(n, n) for n in PRINCIPIOS],
         )
         productos = ([(n, "almuerzo", p, i, 1) for n, p, i in ALMUERZOS]
-                     + [(n, "bebida", 0, 0, 0) for n in BEBIDAS]
+                     + [(n, "bebida", p, 0, 1) for n, p in BEBIDAS]
                      + [(n, "otro", p, 0, 1) for n, p in OTROS])
+        # Un producto que ya existe NO se toca: los precios que el administrador
+        # cambie desde el catálogo se conservan (solo --reset vuelve a los de aquí).
         cur.executemany(
             """INSERT INTO PRODUCTO (nombre, categoria, precio_unitario, incluye_principio, activo)
                SELECT %s, %s, %s, %s, %s
                WHERE NOT EXISTS (SELECT 1 FROM PRODUCTO WHERE nombre = %s)""",
             [(*p, p[0]) for p in productos],
+        )
+        # Excepción única: las bebidas que siguen como se cargaron al principio
+        # ($0 e inactivas, porque no tenían precio) reciben su precio y se activan.
+        # Si el administrador ya les puso precio o las activó, no se cambian.
+        cur.executemany(
+            """UPDATE PRODUCTO SET precio_unitario = %s, activo = 1
+               WHERE nombre = %s AND categoria = 'bebida' AND precio_unitario = 0 AND activo = 0""",
+            [(p, n) for n, p in BEBIDAS],
         )
 
 
